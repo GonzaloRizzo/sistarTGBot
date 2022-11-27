@@ -85,7 +85,7 @@ class TelegramBot:
         return text
 
     async def _send_new_movements(self, new_movements):
-        for movement in new_movements:
+        for movement in reversed(new_movements):
             log.info("Processing the following movement:")
             log.info(movement)
 
