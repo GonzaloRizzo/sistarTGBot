@@ -12,9 +12,11 @@ from SistarClient import SistarClient
 
 log = logging.getLogger(__name__)
 
+LAST_POLL_FILE="data/last_poll.json"
 
 def movs_to_set(movs):
     return set(frozenset(m.items()) for m in movs)
+
 
 
 class TelegramBotException(Exception):
@@ -22,22 +24,23 @@ class TelegramBotException(Exception):
 
 
 class TelegramBot:
-    def __init__(self, token, target_chat):
+    def __init__(self, token, target_chat, poll_interval_mins=30):
 
         self.token = token
         self.target_chat = target_chat
         self.application = Application.builder().token(token).build()
+        self.poll_interval_mins=poll_interval_mins
         self._load_last_poll()
 
     def _load_last_poll(self):
         try:
-            with open("last_poll.json", "r") as f:
+            with open(LAST_POLL_FILE, "r") as f:
                 self.last_poll_movements = json.load(f)
         except FileNotFoundError:
             self.last_poll_movements = []
 
     def _store_last_poll(self, last_poll):
-        with open("last_poll.json", "w") as f:
+        with open(LAST_POLL_FILE, "w") as f:
             self.last_poll_movements = last_poll
             f.write(json.dumps(self.last_poll_movements, indent=4))
 
@@ -49,7 +52,7 @@ class TelegramBot:
         diff = self._fetch_new_movements()
         await self._send_new_movements(diff)
 
-        context.job_queue.run_once(self.do_polling, when=timedelta(minutes=30))
+        context.job_queue.run_once(self.do_polling, when=timedelta(minutes=self.poll_interval_mins))
     
     def _get_text_for_movement(self, movement):
         text = f"<b>{movement['title']}</b>\n\n"
