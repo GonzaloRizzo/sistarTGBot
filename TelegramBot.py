@@ -29,7 +29,7 @@ class TelegramBot:
         self.token = token
         self.target_chat = target_chat
         self.application = Application.builder().token(token).build()
-        self.poll_interval_mins=poll_interval_mins
+        self.poll_interval_mins=int(poll_interval_mins)
         self._load_last_poll()
 
     def _load_last_poll(self):
