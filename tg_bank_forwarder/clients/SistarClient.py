@@ -1,10 +1,10 @@
 import re
 import logging
-from os import getenv
 import requests
 from bs4 import BeautifulSoup
 
 log = logging.getLogger(__name__)
+
 
 class SistarException(Exception):
     pass
@@ -13,6 +13,7 @@ class SistarException(Exception):
 class SistarClient:
     def __init__(self):
         self.session = requests.Session()
+
         # self.session.headers.update(
         #     {
         #         "User-Agent": "sistarTGBot <sistarTGBot@gonzalorizzo.com> (https://github.com/GonzaloRizzo/sistarTGBot)"
@@ -20,25 +21,21 @@ class SistarClient:
         # )
         self.cl = None
 
-    def login(self):
-
-        document = getenv("SIS_DOC")
-        password = getenv("SIS_PASS")
-
-        if not document or not password:
+    def login(self, username, password):
+        if not username or not password:
             raise SistarException("Missing credentials.")
 
         home = self.session.get("https://brou.e-sistarbanc.com.uy/")
         tks = (
             BeautifulSoup(home.text, "lxml")
             .find("input", attrs={"name": "tks"})
-            .attrs["value"]
+            .attrs["value"]  # type: ignore
         )
         self.session.post(
             "https://brou.e-sistarbanc.com.uy/",
             data={
                 "tks": tks,
-                "documento": document,
+                "documento": username,
                 "password": password,
                 "button1": "Ingresar",
             },
@@ -50,7 +47,7 @@ class SistarClient:
         self.cl = cl
 
     def movimientos(self):
-        return self._parse_movimientos_html(self.movimientos_html())
+        return list(reversed(self._parse_movimientos_html(self.movimientos_html())))
 
     def movimientos_html(self):
         if not self.cl:
@@ -63,7 +60,7 @@ class SistarClient:
         p3 = (
             BeautifulSoup(inicio_ajax_response.text, "lxml")
             .find("input", attrs={"name": "p3"})
-            .attrs["value"]
+            .attrs["value"]  # type: ignore
         )
         movs = self.session.post(
             "https://brou.e-sistarbanc.com.uy/movimientos/", data={"p3": p3}
@@ -71,7 +68,7 @@ class SistarClient:
         p3 = (
             BeautifulSoup(movs.text, "lxml")
             .find("input", attrs={"name": "p3"})
-            .attrs["value"]
+            .attrs["value"]  # type: ignore
         )
 
         movimientos_ajax_response = self.session.get(

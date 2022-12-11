@@ -23,6 +23,9 @@ class ItauAccountTransaction(BaseModel):
     def validate_fecha(cls, field: dict):
         return field["millis"] / 1000
 
+    def to_index(self):
+        return frozenset({self.tipo, self.descripcion, self.fecha, self.importe})
+
 
 class ItauAuthorization(BaseModel):
     fecha: date
@@ -44,6 +47,18 @@ class ItauAuthorization(BaseModel):
     @validator("tarjeta", pre=True)
     def validate_tarjeta(cls, field: dict):
         return field["hash"]
+
+    def to_index(self):
+        return frozenset(
+            {
+                self.fecha,
+                self.tarjeta,
+                self.nombreComercio,
+                self.tipo,
+                self.moneda,
+                self.importe,
+            }
+        )
 
 
 class ItauAccount(BaseModel):
@@ -92,13 +107,16 @@ class ItauClient:
 
         self.user_accounts = ItauUserAccounts(**user_data["cuentas"])
 
-    def fetch_credit_authorizations(self, card_id) -> list[ItauAuthorization]:
+    def fetch_card_authorizations(self, card_id) -> list[ItauAuthorization]:
         # /trx/tarjetas/credito/922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42/autorizaciones_pendientes
         data = self._fetch(f"tarjetas/credito/{card_id}/autorizaciones_pendientes")
         autorizaciones = data["datos"]["datosAutorizaciones"]["autorizaciones"]
         return [ItauAuthorization(**a) for a in autorizaciones]
+    
+    def fetch_card_movements(self, card_id):
+        pass
 
-    def fetch_movements(self, account_id: str, year: int, month: int):
+    def fetch_account_movements(self, account_id: str, year: int, month: int):
 
         today = date.today()
 
