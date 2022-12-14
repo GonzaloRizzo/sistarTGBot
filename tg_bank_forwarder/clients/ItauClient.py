@@ -20,8 +20,13 @@ class ItauAccountTransaction(BaseModel):
     saldo: float
 
     @validator("fecha", pre=True)
-    def validate_fecha(cls, field: dict):
-        return field["millis"] / 1000
+    def validate_fecha(cls, field):
+        if isinstance(field, dict):
+            return field["millis"] / 1000
+        elif isinstance(field, date):
+            return field
+        elif isinstance(field, str):
+            return field
 
     def to_index(self):
         return frozenset({self.tipo, self.descripcion, self.fecha, self.importe})
@@ -41,24 +46,32 @@ class ItauAuthorization(BaseModel):
     aprobada: bool
 
     @validator("fecha", pre=True)
-    def validate_fecha(cls, field: dict):
-        return field["millis"] / 1000
+    def validate_fecha(cls, field):
+        if isinstance(field, dict):
+            return field["millis"] / 1000
+        elif isinstance(field, date):
+            return field
+        elif isinstance(field, str):
+            return field
 
     @validator("tarjeta", pre=True)
-    def validate_tarjeta(cls, field: dict):
-        return field["hash"]
+    def validate_tarjeta(cls, field):
+        if isinstance(field, dict):
+            return field["hash"]
+        elif isinstance(field, str):
+            return field
 
-    def to_index(self):
-        return frozenset(
-            {
-                self.fecha,
-                self.tarjeta,
-                self.nombreComercio,
-                self.tipo,
-                self.moneda,
-                self.importe,
-            }
-        )
+    # def to_index(self):
+    #     return frozenset(
+    #         {
+    #             self.fecha,
+    #             self.tarjeta,
+    #             self.nombreComercio,
+    #             self.tipo,
+    #             self.moneda,
+    #             self.importe,
+    #         }
+    #     )
 
 
 class ItauAccount(BaseModel):
@@ -106,13 +119,14 @@ class ItauClient:
         user_data = json.loads(match)
 
         self.user_accounts = ItauUserAccounts(**user_data["cuentas"])
+        # https://www.itaulink.com.uy/trx/tarjetas/credito
 
     def fetch_card_authorizations(self, card_id) -> list[ItauAuthorization]:
         # /trx/tarjetas/credito/922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42/autorizaciones_pendientes
         data = self._fetch(f"tarjetas/credito/{card_id}/autorizaciones_pendientes")
         autorizaciones = data["datos"]["datosAutorizaciones"]["autorizaciones"]
         return [ItauAuthorization(**a) for a in autorizaciones]
-    
+
     def fetch_card_movements(self, card_id):
         pass
 
