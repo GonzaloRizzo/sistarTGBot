@@ -66,7 +66,7 @@ class TelegramBot:
             self._store_last_poll(name, items)
 
         self.scheduler.add_job(
-            self.do_polling, "date", run_date=datetime.now() + timedelta(seconds=5)
+            self.do_polling, "date", run_date=datetime.now() + timedelta(minutes=30)
         )
 
     async def _send_news(self, name, news):
