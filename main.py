@@ -28,16 +28,18 @@ async def main():
 
     bot = TelegramBot(token, target_chat)
 
-    # bot.register_source(sisterbank_source(SIS_DOC, SIS_PASS))
+    bot.register_source(sisterbank_source(SIS_DOC, SIS_PASS, "BROU Mastercard 6900"))
     bot.register_source(
         itau_source(
             ITAU_ID,
             ITAU_PASS,
-            [
-                "23fea23c4c301fe09629a19668e3ccbcc5ac3afc535544eeaf2c72443885747d",
-                "4d921396e8894d1f4d783585cc77cc5d1d45c27e1c381f66f379643ec2f57be8",
-            ],
-            ["922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42"],
+            {
+                "23fea23c4c301fe09629a19668e3ccbcc5ac3afc535544eeaf2c72443885747d": "Itau USD",
+                "4d921396e8894d1f4d783585cc77cc5d1d45c27e1c381f66f379643ec2f57be8": "Itau UYU",
+            },
+            {
+                "922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42": "Itau Visa 3033"
+            },
         )
     )
 

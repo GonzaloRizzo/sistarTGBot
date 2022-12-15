@@ -16,7 +16,7 @@ LAST_POLL_DIRECTORY = "last_polls"
 
 
 T = TypeVar("T", bound=BaseSourceModel)
-SourceFnYield = Tuple[str, list[T], Type[T]]
+SourceFnYield = Tuple[str, list[T], Type[T], str]
 SourceFn = Callable[[], Generator[SourceFnYield, None, None]]
 FormatterFn = Callable[[dict], str]
 
@@ -43,7 +43,7 @@ class TelegramBot:
         for sourceFn in self.sources:
             log.info(f"Polling {sourceFn.__name__}")
 
-            for account_name, items, Model in sourceFn():
+            for account_name, items, Model, title in sourceFn():
                 print(f"Found {len(items)} items in {account_name}")
 
                 last_poll_indexed = {
@@ -59,18 +59,18 @@ class TelegramBot:
 
                 log.info(f"Found {len(news)} new item(s)")
 
-                await self._send_news(news)
+                await self._send_news(news, title)
                 self._store_last_poll(account_name, items)
 
         run_date = datetime.now() + timedelta(minutes=30)
         print(f"Next run at {run_date}")
-        self.scheduler.add_job(
-            self.do_polling, "date", run_date=run_date
-        )
+        self.scheduler.add_job(self.do_polling, "date", run_date=run_date)
 
-    async def _send_news(self, news: list[T]):
+    async def _send_news(self, news: list[T], title: str):
         for new in news:
-            await self.bot.send_message(self.target_chat, new.format())
+            text = f"<b>{title}</b>\n\n"
+            text += new.format()
+            await self.bot.send_message(self.target_chat, text)
         pass
 
     def _store_last_poll(self, name: str, items):
