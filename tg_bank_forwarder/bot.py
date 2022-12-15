@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Callable, Generator, Tuple, Type, TypeVar
 
 from rich import print
 from pathlib import Path
@@ -7,17 +8,17 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telebot.async_telebot import AsyncTeleBot
 
-from tg_bank_forwarder.sources.base import BaseSource
+from tg_bank_forwarder.sources.base import BaseSourceModel, BaseSourceModelList
 
 log = logging.getLogger(__name__)
 
 LAST_POLL_DIRECTORY = "last_polls"
 
 
-def index_dict_array(array, index_keys):
-    return dict(
-        (frozenset((k, v) for k, v in d.items() if k in index_keys), d) for d in array
-    )
+T = TypeVar("T", bound=BaseSourceModel)
+SourceFnYield = Tuple[str, list[T], Type[T]]
+SourceFn = Callable[[], Generator[SourceFnYield, None, None]]
+FormatterFn = Callable[[dict], str]
 
 
 class TelegramBot:
@@ -28,11 +29,10 @@ class TelegramBot:
         self.target_chat = target_chat
 
         self.last_polls: dict[str, list[dict]] = {}
-        self.sources: dict[str, BaseSource] = {}
+        self.sources: list[SourceFn] = []
 
-    def register_source(self, name: str, source: BaseSource):
-        self.sources[name] = source
-        self._load_last_poll(name)
+    def register_source(self, source: SourceFn):
+        self.sources.append(source)
 
     async def start(self):
         self.scheduler.add_job(self.do_polling, "date", run_date=datetime.now())
@@ -40,41 +40,37 @@ class TelegramBot:
         await self.bot.polling()
 
     async def do_polling(self):
-        for name, source in self.sources.items():
-            log.info(f"Polling {name}")
+        for sourceFn in self.sources:
+            log.info(f"Polling {sourceFn.__name__}")
 
-            last_poll = self.last_polls.get(name, [])
-            indexed_last_poll = index_dict_array(last_poll, source.index_keys)
+            for account_name, items, Model in sourceFn():
+                print(f"Found {len(items)} items in {account_name}")
 
-            items = source.fetch()
-            print(items)
-            indexed_items = index_dict_array(items, source.index_keys)
+                last_poll_indexed = {
+                    Model.parse_obj(obj).to_index()
+                    for obj in self._load_last_poll(account_name)
+                }
 
-            print(indexed_items)
+                items_indexed = {obj.to_index() for obj in items}
 
-            news = [
-                v
-                for k, v in indexed_items.items()
-                if k in indexed_items.keys() - indexed_last_poll.keys()
-            ]
+                new_indexes = items_indexed - last_poll_indexed
 
-            log.info(f"Found {len(news)} new(s)")
+                news = [i for i in items if i.to_index() in new_indexes]
 
-            print(news)
+                log.info(f"Found {len(news)} new item(s)")
 
-            await self._send_news(name, news)
-            self._store_last_poll(name, items)
+                await self._send_news(news)
+                self._store_last_poll(account_name, items)
 
+        run_date = datetime.now() + timedelta(minutes=30)
+        print(f"Next run at {run_date}")
         self.scheduler.add_job(
-            self.do_polling, "date", run_date=datetime.now() + timedelta(minutes=30)
+            self.do_polling, "date", run_date=run_date
         )
 
-    async def _send_news(self, name, news):
-        assert name in self.sources, f"Source {name} not found"
-
+    async def _send_news(self, news: list[T]):
         for new in news:
-            text = self.sources[name].format(new)
-            await self.bot.send_message(self.target_chat, text)
+            await self.bot.send_message(self.target_chat, new.format())
         pass
 
     def _store_last_poll(self, name: str, items):
@@ -82,14 +78,21 @@ class TelegramBot:
 
         with open(Path(LAST_POLL_DIRECTORY, f"{name}.json"), "w") as f:
             self.last_polls[name] = items
-            f.write(json.dumps(self.last_polls[name], indent=4))
+            f.write(
+                BaseSourceModelList.parse_obj(items).json(indent=4, exclude_unset=True)
+            )
         pass
 
-    def _load_last_poll(self, name: str):
-        assert isinstance(name, str) and len(name) > 0, "Invalid name"
+    def _load_last_poll(self, account_name: str):
+        assert (
+            isinstance(account_name, str) and len(account_name) > 0
+        ), "Invalid account name"
 
-        try:
-            with open(Path(LAST_POLL_DIRECTORY, f"{name}.json"), "r") as f:
-                self.last_polls[name] = json.load(f)
-        except FileNotFoundError:
-            self.last_polls[name] = []
+        if account_name not in self.last_polls:
+            try:
+                with open(Path(LAST_POLL_DIRECTORY, f"{account_name}.json"), "r") as f:
+                    self.last_polls[account_name] = json.load(f)
+            except FileNotFoundError:
+                self.last_polls[account_name] = []
+
+        return self.last_polls[account_name]

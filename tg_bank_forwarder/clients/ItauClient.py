@@ -6,11 +6,13 @@ from urllib.parse import urljoin
 from pydantic import BaseModel, validator
 from typing import Literal
 
+from tg_bank_forwarder.sources.base import BaseSourceModel
+
 BASE_URL = "https://www.itaulink.com.uy/trx/"
 RE_USERDATA = r"JSON.parse\('([^']*)'\)"
 
 
-class ItauAccountTransaction(BaseModel):
+class ItauAccountTransaction(BaseSourceModel):
     tipo: Literal["D", "C"] | str
     descripcion: str
     descripcionAdicional: str
@@ -31,8 +33,21 @@ class ItauAccountTransaction(BaseModel):
     def to_index(self):
         return frozenset({self.tipo, self.descripcion, self.fecha, self.importe})
 
+    def format(self):
+        text = f"<b>{self.tipo} {self.descripcion} {self.descripcionAdicional}</b>\n"
 
-class ItauAuthorization(BaseModel):
+        text += "\n"
+
+        text += f"<b>Fecha:</b> {self.fecha}\n"
+
+        text += "\n"
+
+        text += f"<b>Importe:</b> {self.importe}\n"
+
+        return text
+
+
+class ItauAuthorization(BaseSourceModel):
     fecha: date
     tarjeta: str
     hora: str
@@ -61,17 +76,30 @@ class ItauAuthorization(BaseModel):
         elif isinstance(field, str):
             return field
 
-    # def to_index(self):
-    #     return frozenset(
-    #         {
-    #             self.fecha,
-    #             self.tarjeta,
-    #             self.nombreComercio,
-    #             self.tipo,
-    #             self.moneda,
-    #             self.importe,
-    #         }
-    #     )
+    def to_index(self):
+        return frozenset(
+            {
+                self.fecha,
+                self.tarjeta,
+                self.nombreComercio,
+                self.tipo,
+                self.moneda,
+                self.importe,
+            }
+        )
+
+    def format(self):
+        text = f"<b>{self.tipo} {self.nombreComercio}: {self.etiqueta}</b>\n"
+
+        text += "\n"
+
+        text += f"<b>Fecha:</b> {self.fecha} {self.hora}\n"
+
+        text += "\n"
+
+        text += f"<b>{self.moneda}:</b> {self.importe}\n"
+
+        return text
 
 
 class ItauAccount(BaseModel):

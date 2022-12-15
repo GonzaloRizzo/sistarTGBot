@@ -1,16 +1,16 @@
 from abc import ABC, abstractmethod
+from pydantic import BaseModel
 
 
-class BaseSource(ABC):
-    @property
+class BaseSourceModel(ABC, BaseModel):
     @abstractmethod
-    def index_keys(self) -> list:
+    def to_index(self) -> frozenset:
         pass
 
     @abstractmethod
-    def fetch(self) -> list:
+    def format(self) -> str:
         pass
 
-    @abstractmethod
-    def format(self, value) -> str:
-        pass
+
+class BaseSourceModelList(BaseModel):
+    __root__: list[BaseSourceModel]
