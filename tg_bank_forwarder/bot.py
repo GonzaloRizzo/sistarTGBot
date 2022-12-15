@@ -68,7 +68,7 @@ class TelegramBot:
 
     async def _send_news(self, news: list[T], title: str):
         for new in news:
-            text = f"<b>{title}</b>\n\n"
+            text = f"<i>{title}</i>\n\n"
             text += new.format()
             await self.bot.send_message(self.target_chat, text)
         pass
