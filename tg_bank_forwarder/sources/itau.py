@@ -13,7 +13,7 @@ def itau_source(
         itau = ItauClient()
         itau.login(username, password)
 
-        for account_id, title in account_ids:
+        for account_id, title in account_ids.items():
             today = date.today()
             yield (
                 f"itau:account:{account_id}",
