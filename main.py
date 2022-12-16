@@ -1,3 +1,4 @@
+import sentry_sdk
 import asyncio
 import logging
 from dotenv import load_dotenv
@@ -8,10 +9,20 @@ from tg_bank_forwarder.sources.sistarbank import sisterbank_source
 from tg_bank_forwarder.bot import TelegramBot
 
 load_dotenv()
+SENTRY_DSN = getenv("SENTRY_DSN")
 LOGLEVEL = getenv("LOGLEVEL", "INFO").upper()
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=LOGLEVEL
 )
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+    )
 
 
 async def main():
