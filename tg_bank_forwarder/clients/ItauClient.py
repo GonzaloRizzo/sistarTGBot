@@ -1,3 +1,4 @@
+import backoff
 from datetime import date
 import json
 import re
@@ -132,6 +133,9 @@ class ItauClient:
 
         return res.json()["itaulink_msg"]["data"]
 
+    @backoff.on_exception(
+        backoff.expo, (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
+    )
     def login(self, username, password):
         res = self.session.post(
             urljoin(BASE_URL, "doLogin"),
