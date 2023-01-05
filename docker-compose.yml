@@ -4,4 +4,4 @@ services:
     build: .
     env_file: .env
     volumes:
-      - ./data:/src/data
+      - ./last_polls:/src/last_polls
