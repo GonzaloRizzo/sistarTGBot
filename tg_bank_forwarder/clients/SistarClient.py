@@ -1,3 +1,4 @@
+import html
 import re
 import logging
 from typing import Optional
@@ -28,6 +29,20 @@ class SistarbankMovement(BaseSourceModel):
     def to_index(self):
         return frozenset({self.date, self.title, self.uyu, self.usd})
 
+    def get_uyu(self) -> float | None:
+        match = re.search(r"\$ (\d+,\d{2})", self.uyu)
+        if not match:
+            return
+
+        return float(match.group(1).replace(",", "."))
+
+    def get_usd(self) -> float | None:
+        match = re.search(r"USD (\d+,\d{2})", self.uyu)
+        if not match:
+            return
+
+        return float(match.group(1).replace(",", "."))
+
     def format(self):
         text = f"<b>{self.title}</b>\n\n"
 
@@ -52,13 +67,41 @@ class SistarbankMovement(BaseSourceModel):
 
         text += "\n"
 
-        if self.uyu not in ["$ 0,00", "$"]:
-            text += self.uyu.replace("$", "<b>UYU:</b>")
+        uyu_value = self.get_uyu()
+        usd_value = self.get_usd()
+        is_expense = None
+        mwiz_account = None
+        mwiz_amount = None
+        mwiz_currency = None
+
+        if uyu_value and uyu_value != 0:
+            is_expense = uyu_value > 0
+            mwiz_account = "MastercardBROUUYU"
+            mwiz_amount = uyu_value
+            mwiz_currency = "UYU"
+            text += f"<b>UYU: {uyu_value}</b>"
             text += "\n"
 
-        if self.usd not in ["USD 0,00", "USD"]:
-            text += self.usd.replace("USD", "<b>USD:</b>")
+        elif usd_value and usd_value != 0:
+            is_expense = usd_value > 0
+            mwiz_account = "MastercardBROUUSD"
+            mwiz_amount = usd_value
+            mwiz_currency = "USD"
+            text += f"<b>USD: {usd_value}</b>"
             text += "\n"
+
+        mwiz_date = (
+            re.sub(
+                r"Fecha y Hora: (\d{2})/(\d{2})/(\d{2}) - ",
+                r"20\3-\2-\1 ",
+                self.date or "",
+            )
+            if self.is_authorization
+            else re.sub(r"Mov\. (\d{2})/(\d{2})/(\d{2})", r"20\3-\2-\1", self.mov or "")
+        )
+
+        mwiz_url = f"moneywiz://{'expense' if is_expense else 'income'}?account={mwiz_account}&amount={mwiz_amount}&currency={mwiz_currency}&mwiz_description={self.concepto if self.is_authorization else self.title}&date={mwiz_date}"
+        text += f'\n<a href="{html.escape(mwiz_url)}">Add to MoneyWiz</a>'
 
         return text
 
