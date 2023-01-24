@@ -44,7 +44,7 @@ class TelegramBot:
             log.info(f"Polling {sourceFn.__name__}")
             try:
                 for account_name, items, Model, title in sourceFn():
-                    print(f"Found {len(items)} items in {account_name}")
+                    # print(f"Found {len(items)} items in {account_name}")
 
                     last_poll_indexed = {
                         Model.parse_obj(obj).to_index()
@@ -57,7 +57,8 @@ class TelegramBot:
 
                     news = [i for i in items if i.to_index() in new_indexes]
 
-                    log.info(f"Found {len(news)} new item(s)")
+                    if len(news) > 0:
+                        log.info(f"Found {len(news)} new item(s) in {account_name}") 
 
                     await self._send_news(news, title)
                     self._store_last_poll(account_name, items)
@@ -66,7 +67,7 @@ class TelegramBot:
                 log.error(f"Error processing {sourceFn.__name__}")
 
         run_date = datetime.now() + timedelta(minutes=30)
-        print(f"Next run at {run_date}")
+        log.info(f"Next run at {run_date}")
         self.scheduler.add_job(self.do_polling, "date", run_date=run_date)
 
     async def _send_news(self, news: list[T], title: str):
