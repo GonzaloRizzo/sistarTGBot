@@ -37,30 +37,33 @@ class TelegramBot:
     async def start(self):
         self.scheduler.add_job(self.do_polling, "date", run_date=datetime.now())
         self.scheduler.start()
-        await self.bot.polling()
+        await self.bot.polling(non_stop=True)
 
     async def do_polling(self):
         for sourceFn in self.sources:
             log.info(f"Polling {sourceFn.__name__}")
+            try:
+                for account_name, items, Model, title in sourceFn():
+                    print(f"Found {len(items)} items in {account_name}")
 
-            for account_name, items, Model, title in sourceFn():
-                print(f"Found {len(items)} items in {account_name}")
+                    last_poll_indexed = {
+                        Model.parse_obj(obj).to_index()
+                        for obj in self._load_last_poll(account_name)
+                    }
 
-                last_poll_indexed = {
-                    Model.parse_obj(obj).to_index()
-                    for obj in self._load_last_poll(account_name)
-                }
+                    items_indexed = {obj.to_index() for obj in items}
 
-                items_indexed = {obj.to_index() for obj in items}
+                    new_indexes = items_indexed - last_poll_indexed
 
-                new_indexes = items_indexed - last_poll_indexed
+                    news = [i for i in items if i.to_index() in new_indexes]
 
-                news = [i for i in items if i.to_index() in new_indexes]
+                    log.info(f"Found {len(news)} new item(s)")
 
-                log.info(f"Found {len(news)} new item(s)")
-
-                await self._send_news(news, title)
-                self._store_last_poll(account_name, items)
+                    await self._send_news(news, title)
+                    self._store_last_poll(account_name, items)
+            except Exception as e:
+                log.error(e)
+                log.error(f"Error processing {sourceFn.__name__}")
 
         run_date = datetime.now() + timedelta(minutes=30)
         print(f"Next run at {run_date}")
