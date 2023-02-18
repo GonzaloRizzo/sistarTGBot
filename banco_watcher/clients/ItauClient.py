@@ -5,15 +5,13 @@ import re
 import requests
 from urllib.parse import urljoin
 from pydantic import BaseModel, validator
-from typing import Literal
-
-from tg_bank_forwarder.sources.base import BaseSourceModel
+from typing import Literal, Optional
 
 BASE_URL = "https://www.itaulink.com.uy/trx/"
 RE_USERDATA = r"JSON.parse\('([^']*)'\)"
 
 
-class ItauAccountTransaction(BaseSourceModel):
+class ItauAccountMovement(BaseModel):
     tipo: Literal["D", "C"] | str
     descripcion: str
     descripcionAdicional: str
@@ -31,24 +29,8 @@ class ItauAccountTransaction(BaseSourceModel):
         elif isinstance(field, str):
             return field
 
-    def to_index(self):
-        return frozenset({self.tipo, self.descripcion, self.fecha, self.importe})
 
-    def format(self):
-        text = f"<b>{self.tipo} {self.descripcion} {self.descripcionAdicional}</b>\n"
-
-        text += "\n"
-
-        text += f"<b>Fecha:</b> {self.fecha}\n"
-
-        text += "\n"
-
-        text += f"<b>Importe:</b> {self.importe}\n"
-
-        return text
-
-
-class ItauAuthorization(BaseSourceModel):
+class ItauAuthorization(BaseModel):
     fecha: date
     tarjeta: str
     hora: str
@@ -76,31 +58,6 @@ class ItauAuthorization(BaseSourceModel):
             return field["hash"]
         elif isinstance(field, str):
             return field
-
-    def to_index(self):
-        return frozenset(
-            {
-                self.fecha,
-                self.tarjeta,
-                self.nombreComercio,
-                self.tipo,
-                self.moneda,
-                self.importe,
-            }
-        )
-
-    def format(self):
-        text = f"<b>{self.tipo} {self.nombreComercio}: {self.etiqueta}</b>\n"
-
-        text += "\n"
-
-        text += f"<b>Fecha:</b> {self.fecha} {self.hora}\n"
-
-        text += "\n"
-
-        text += f"<b>{self.moneda}:</b> {self.importe}\n"
-
-        return text
 
 
 class ItauAccount(BaseModel):
@@ -155,18 +112,27 @@ class ItauClient:
 
     def fetch_card_authorizations(self, card_id) -> list[ItauAuthorization]:
         # /trx/tarjetas/credito/922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42/autorizaciones_pendientes
+
         data = self._fetch(f"tarjetas/credito/{card_id}/autorizaciones_pendientes")
         autorizaciones = data["datos"]["datosAutorizaciones"]["autorizaciones"]
+
         return [ItauAuthorization(**a) for a in autorizaciones]
 
     def fetch_card_movements(self, card_id):
         pass
 
-    def fetch_account_movements(self, account_id: str, year: int, month: int):
+    def fetch_account_movements(
+        self, account_id: str, year: Optional[int] = None, month: Optional[int] = None
+    ):
+        assert (year is None and month is None) or (
+            year is not None and month is not None
+        ), "Must send Year and Month or not send either"
 
         today = date.today()
 
-        if year == today.year and month == today.month:
+        if (year == today.year and month == today.month) or (
+            year is None and month is None
+        ):
             data = self._fetch(f"cuentas/1/{account_id}/mesActual")
             movements = data["movimientosMesActual"]["movimientos"]
         else:
@@ -175,7 +141,7 @@ class ItauClient:
             )
             movements = data["mapaHistoricos"]["movimientosHistoricos"]["movimientos"]
 
-        return [ItauAccountTransaction(**m) for m in movements]
+        return [ItauAccountMovement(**m) for m in movements]
 
     def fetch_comprobante(self):
         # https://www.itaulink.com.uy/trx/cuentas/02/CRE.%20CAMBIOSOP....867135/23fea23c4c301fe09629a19668e3ccbcc5ac3afc535544eeaf2c72443885747d/30/NOV/2022/cargarComprobante
