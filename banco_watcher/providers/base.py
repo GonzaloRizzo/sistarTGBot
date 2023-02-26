@@ -27,7 +27,8 @@ class BaseEntry(BaseModel, ABC):
         return lt((self.as_tuple()), (other.as_tuple()))
 
 LAST_POLL_DIRECTORY = "last_polls"
-class Account():
+
+class CachedAccount():
     id: str
 
     def __init__(self, id, Model, entries) -> None:

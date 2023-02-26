@@ -5,7 +5,7 @@ from banco_watcher.clients.SistarbancClient import (
     SistarbancClient,
     SistarbancMovement,
 )
-from .base import BaseEntry, BaseProvider, Account
+from .base import BaseEntry, BaseProvider, CachedAccount
 
 DATE_FORMAT = "%d/%m/%y"
 DATETIME_FORMAT = f"{DATE_FORMAT} %H:%M:%S"
@@ -47,6 +47,7 @@ class SistarbancMovementEntry(BaseEntry, SistarbancMovement):
 
 class SistarbancProvider(BaseProvider):
     id: str
+    title: str
     username: str
     password: SecretStr
 
@@ -54,15 +55,14 @@ class SistarbancProvider(BaseProvider):
         client = SistarbancClient()
         client.login(self.username, self.password.get_secret_value())
 
-        return [
-            Account(
-                ":".join(["sistarbanc", self.id, "autorizaciones"]),
-                SistarbancAuthorizationEntry,
-                client.autorizaciones(),
-            ),
-            Account(
-                ":".join(["sistarbanc", self.id, "movimientos"]),
-                SistarbancMovementEntry,
-                client.movimientos(),
-            ),
-        ]
+        yield self.title, CachedAccount(
+            ":".join(["sistarbanc", self.id, "autorizaciones"]),
+            SistarbancAuthorizationEntry,
+            client.autorizaciones(),
+        )
+        yield self.title, CachedAccount(
+            ":".join(["sistarbanc", self.id, "movimientos"]),
+            SistarbancMovementEntry,
+            client.movimientos(),
+        )
+

@@ -10,6 +10,9 @@ from banco_watcher.providers.SistarbancProvider import SistarbancProvider
 class BancoWatcherConfig(BaseModel):
     token: str
     target_chat: str
+    # TODO: Have sentry_dsn defined here
+
+    # TODO: Have a single Provider array using pydantic discriminators
     itau: list[ItauProvider]
     sistarbank: list[SistarbancProvider]
 
@@ -25,14 +28,18 @@ class BancoWatcherBot:
         await self.bot.polling(non_stop=True)
 
     async def do_polling(self):
-        for provider in [*self.config.itau, *self.config.sistarbank]:
-            for account in provider.fetch_accounts():
-                for entry in account.compare_with_cache():
-                    await self.send_entries(entry)
-                account.store_cache()
+        providers: list[ItauProvider | SistarbancProvider] = [*self.config.itau, *self.config.sistarbank]
+        for provider in providers:
+            for title, entry_list in provider.fetch_accounts():
+                for entry in entry_list.compare_with_cache():
+                    await self.send_entry(title, entry)
+                entry_list.store_cache()
         self.scheduler.add_job(self.do_polling, "date", run_date=datetime.now() + timedelta(minutes=30))
     
-    async def send_entries(self, entry):
-        await self.bot.send_message(self.config.target_chat, entry.format())
+    async def send_entry(self, title, entry):
+        text = f"<u>{title}</u>\n" 
+        text = "\n"
+        text += entry.format()
+        await self.bot.send_message(self.config.target_chat, text)
 
 

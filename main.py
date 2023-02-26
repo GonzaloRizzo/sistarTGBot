@@ -3,7 +3,6 @@ import asyncio
 import logging
 from dotenv import load_dotenv
 from os import getenv
-from rich import print
 
 from banco_watcher.bot import BancoWatcherBot
 

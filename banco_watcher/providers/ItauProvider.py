@@ -7,7 +7,7 @@ from banco_watcher.clients.ItauClient import (
     ItauAuthorization,
 )
 
-from .base import BaseEntry, BaseProvider, Account
+from .base import BaseEntry, BaseProvider, CachedAccount
 
 
 class ItauAccountEntry(BaseEntry, ItauAccountMovement):
@@ -57,13 +57,13 @@ class ItauProvider(BaseProvider):
 
         for account in self.accounts:
             if account.type == "account":
-                yield Account(
+                yield account.title, CachedAccount(
                     ":".join(["itau", self.id, account.id]),
                     ItauAccountEntry,
                     client.fetch_account_movements(account.id),
                 )
             elif account.type == "card_authorizations":
-                yield Account(
+                yield account.title, CachedAccount(
                     ":".join(["itau", self.id, account.id]),
                     ItauAuthorizationEntry,
                     client.fetch_card_authorizations(account.id),
