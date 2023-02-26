@@ -42,7 +42,7 @@ class SistarbancAuthorization(BaseModel):
     def parse_raw(cls, raw):
         date = datetime.strptime(f'{raw["Fecha"]} {raw["Hora"]}', "%d/%m/%y %H:%M:%S")
 
-        amount, currency = parse_amount_currency(raw["USD"], raw["$"])
+        amount, currency = parse_amount_currency(raw["$"], raw["USD"])
 
         return SistarbancAuthorization(
             id=raw["Autorización"],
@@ -73,7 +73,7 @@ class SistarbancMovement(BaseModel):
         mov = datetime.strptime(raw["Mov."], "%d/%m/%y")
         ing = datetime.strptime(raw["Ing."], "%d/%m/%y")
 
-        amount, currency = parse_amount_currency(raw["USD"], raw["$"])
+        amount, currency = parse_amount_currency(raw["$"], raw["USD"])
 
         return cls(
             title=raw["Concepto"],
