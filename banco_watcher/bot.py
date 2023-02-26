@@ -38,7 +38,7 @@ class BancoWatcherBot:
     
     async def send_entry(self, title, entry):
         text = f"<u>{title}</u>\n" 
-        text = "\n"
+        text += "\n"
         text += entry.format()
         await self.bot.send_message(self.config.target_chat, text)
 
