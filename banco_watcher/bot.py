@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from pydantic import BaseModel, parse_file_as
+import sentry_sdk
 
 from telebot.async_telebot import AsyncTeleBot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -30,10 +31,13 @@ class BancoWatcherBot:
     async def do_polling(self):
         providers: list[ItauProvider | SistarbancProvider] = [*self.config.itau, *self.config.sistarbank]
         for provider in providers:
-            for title, entry_list in provider.fetch_accounts():
-                for entry in entry_list.compare_with_cache():
-                    await self.send_entry(title, entry)
-                entry_list.store_cache()
+            try:
+                for title, entry_list in provider.fetch_accounts():
+                    for entry in entry_list.compare_with_cache():
+                        await self.send_entry(title, entry)
+                    entry_list.store_cache()
+            except Exception as err:
+                sentry_sdk.capture_exception(err)
         self.scheduler.add_job(self.do_polling, "date", run_date=datetime.now() + timedelta(minutes=30))
     
     async def send_entry(self, title, entry):
