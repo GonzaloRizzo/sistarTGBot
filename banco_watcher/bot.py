@@ -37,7 +37,9 @@ class BancoWatcherBot:
                         await self.send_entry(title, entry)
                     entry_list.store_cache()
             except Exception as err:
+                print(err)
                 sentry_sdk.capture_exception(err)
+                await self.bot.send_message(self.config.target_chat, str(err))
         self.scheduler.add_job(self.do_polling, "date", run_date=datetime.now() + timedelta(minutes=30))
     
     async def send_entry(self, title, entry):
