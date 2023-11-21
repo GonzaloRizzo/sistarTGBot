@@ -5,3 +5,11 @@ services:
     env_file: .env
     volumes:
       - ./last_polls:/src/last_polls
+      - .:/src
+  itau-service:
+    build: ./itau_service
+    env_file: .env
+    ports: 
+      - 3000:3000
+    cap_add:
+      - SYS_ADMIN

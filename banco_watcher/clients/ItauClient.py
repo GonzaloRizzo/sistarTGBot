@@ -1,7 +1,5 @@
 import backoff
 from datetime import date
-import json
-import re
 import requests
 from urllib.parse import urljoin
 from pydantic import BaseModel, validator
@@ -93,22 +91,12 @@ class ItauClient:
     @backoff.on_exception(
         backoff.expo, (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
     )
-    def login(self, username, password):
-        res = self.session.post(
-            urljoin(BASE_URL, "doLogin"),
-            data={
-                "tipo_documento": "1",
-                "tipo_usuario": "R",
-                "nro_documento": username,
-                "pass": password,
-            },
-        )
-        match = re.findall(RE_USERDATA, res.text)[0]
+    def login(self, username=None, password=None):
+        res = requests.get("http://itau-service:3000/login")
 
-        user_data = json.loads(match)
-
-        self.user_accounts = ItauUserAccounts(**user_data["cuentas"])
-        # https://www.itaulink.com.uy/trx/tarjetas/credito
+        cookies = res.json()['cookies']
+        self.session.cookies.set("TS01888778", cookies["TS01888778"], domain="www.itaulink.com.uy")
+        self.session.cookies.set("JSESSIONID", cookies["JSESSIONID"], domain="www.itaulink.com.uy")
 
     def fetch_card_authorizations(self, card_id) -> list[ItauAuthorization]:
         # /trx/tarjetas/credito/922e3a5a2ed7082eca4b9a27fb511971d823a52a4011a4e811dbd6abc79ddf42/autorizaciones_pendientes
