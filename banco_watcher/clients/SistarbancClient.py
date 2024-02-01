@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup, Tag
+from pathlib import Path
 
 
 def parse_amount(amount_str: str):
@@ -11,6 +12,7 @@ def parse_amount(amount_str: str):
     except ValueError:
         return None
 
+HISTORY_DIRECTORY = "history"
 
 def parse_amount_currency(uyu, usd):
     usd_amount = parse_amount(usd)
@@ -126,7 +128,11 @@ class SistarbancClient:
         bs = BeautifulSoup(html, "lxml")
         table = bs.select_one("#listado table")
 
-        assert table, "Missing table"
+        if not table:
+            datestr = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            with open(Path(HISTORY_DIRECTORY, f"{datestr}_sistar_txn.json"), "w") as f:
+                f.write(html)
+        assert table, "Missing txn table"
 
         data = table_to_py(table)
         skiped_entries = [
@@ -148,6 +154,11 @@ class SistarbancClient:
         bs = BeautifulSoup(html, "lxml")
         table = bs.select_one("#listado table")
 
-        assert table, "Missing table"
+        if not table:
+            datestr = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            with open(Path(HISTORY_DIRECTORY, f"{datestr}_sistar_auth.json"), "w") as f:
+                f.write(html)
+
+        assert table, "Missing auth table"
 
         return [SistarbancAuthorization.parse_raw(e) for e in table_to_py(table)]

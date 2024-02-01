@@ -2,6 +2,7 @@ import json
 from operator import lt
 from pathlib import Path
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from pydantic import BaseModel, parse_file_as, parse_obj_as
 from pydantic.json import pydantic_encoder
@@ -27,6 +28,7 @@ class BaseEntry(BaseModel, ABC):
         return lt((self.as_tuple()), (other.as_tuple()))
 
 LAST_POLL_DIRECTORY = "last_polls"
+HISTORY_DIRECTORY = "history"
 
 class CachedAccount():
     id: str
@@ -48,10 +50,14 @@ class CachedAccount():
     def store_cache(self):
         with open(Path(LAST_POLL_DIRECTORY, f"{self.id}.json"), "w") as f:
             f.write(json.dumps(sorted(self.entries), indent=4, default=pydantic_encoder))
+        datestr = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        with open(Path(HISTORY_DIRECTORY, f"{datestr}_{self.id}.json"), "w") as f:
+            f.write(json.dumps(sorted(self.entries), indent=4, default=pydantic_encoder))
 
     def compare_with_cache(self):
         cached_account = self.load_cache(self.id, self.Model)
 
         new_found_entries = self.entries - cached_account.entries 
+        missing_entries = cached_account.entries - self.entries
 
-        return sorted(new_found_entries)
+        return sorted(new_found_entries), missing_entries
