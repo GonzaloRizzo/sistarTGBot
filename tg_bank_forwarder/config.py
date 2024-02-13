@@ -60,9 +60,3 @@ class Config(BaseModel):
   def read_config(cls, file_path):
      with open(file_path, "r") as f:
         return cls(**yaml.safe_load(f))
-  
-  def group_accounts(self):
-    return groupby(
-            self.accounts, lambda acc: (acc.provider, acc.credentials_env)
-        )
-    
