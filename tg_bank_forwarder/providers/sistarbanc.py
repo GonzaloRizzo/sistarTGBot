@@ -193,9 +193,14 @@ class SistarbancProvider(BaseProvider):
         ).text
 
         bs = BeautifulSoup(html, "lxml")
-        table = bs.select_one("#listado table")
+        
+        content = bs.select_one(".maq_contenido.cuenta")
+        assert content, "Missing content"
 
-        assert table, "Missing txn table"
+        table = content.select_one("#listado table")
+
+        if not table:
+            return []
 
         data = table_to_py(table)
         skiped_entries = [
@@ -217,9 +222,13 @@ class SistarbancProvider(BaseProvider):
         ).text
 
         bs = BeautifulSoup(html, "lxml")
-        table = bs.select_one("#listado table")
 
-        assert table, "Missing auth table"
-        # TODO: Missing an auth table doesn't mean that login failied, sometimes there just isn't anything to return
+        content = bs.select_one(".maq_contenido.cuenta")
+        assert content, "Missing content"
+
+        table = content.select_one("#listado table")
+
+        if not table:
+            return []
 
         return [SistarbancAuthorization.parse_raw(e) for e in table_to_py(table)]
