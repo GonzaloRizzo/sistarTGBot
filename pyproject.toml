@@ -18,6 +18,8 @@ apscheduler = "^3.9.1.post1"
 rich = "^12.6.0"
 sentry-sdk = "^1.12.0"
 backoff = "^2.2.1"
+playwright = "^1.41.1"
+pyyaml = "^6.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
