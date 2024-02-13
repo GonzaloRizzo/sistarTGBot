@@ -1,14 +1,19 @@
+from datetime import datetime
+from os import environ
+from typing import Literal, TYPE_CHECKING
+
 import requests
 from bs4 import BeautifulSoup, Tag
-from os import environ
-from datetime import datetime
-from typing import  Literal, TYPE_CHECKING
 from pydantic import BaseModel
 
 from .base import BaseProvider
 
 if TYPE_CHECKING:
     from ..config import SistarbancAuthorizationsAccount, SistarbancMovementsAccount
+
+DATE_FORMAT = "%d/%m/%y"
+DATETIME_FORMAT = f"{DATE_FORMAT} %H:%M:%S"
+
 
 def table_to_py(table: Tag):
     output = []
@@ -21,11 +26,13 @@ def table_to_py(table: Tag):
 
     return [dict(zip(output[0], raw)) for raw in output[1:]]
 
+
 def parse_amount(amount_str: str):
     try:
         return float(amount_str.replace(",", "."))
     except ValueError:
         return None
+
 
 def parse_amount_currency(uyu, usd):
     usd_amount = parse_amount(usd)
@@ -43,7 +50,7 @@ def parse_amount_currency(uyu, usd):
 
 
 class SistarbancAuthorization(BaseModel):
-    id: int # What's this?
+    id: int  # What's this?
 
     card: str
     date: datetime
@@ -52,7 +59,6 @@ class SistarbancAuthorization(BaseModel):
     currency: Literal["USD"] | Literal["UYU"]
 
     instalments: tuple[int, int]
-
 
     @classmethod
     def parse_raw(cls, raw):
@@ -73,16 +79,33 @@ class SistarbancAuthorization(BaseModel):
             amount=amount,
             currency=currency,
         )
-    
+
     def matches(self, other):
-        return all([
-            # self.id == other.id,
-            self.card == other.card,
-            self.date == other.date,
-            self.title== other.title,
-            self.amount== other.amount,
-            self.currency== other.currency,
-        ])
+        return all(
+            [
+                # self.id == other.id,
+                self.card == other.card,
+                self.date == other.date,
+                self.title == other.title,
+                self.amount == other.amount,
+                self.currency == other.currency,
+            ]
+        )
+
+    def format(self):
+        installments = (
+            f"{self.instalments[0]}/{self.instalments[1]}"
+            if self.instalments[1] > 1
+            else None
+        )
+        text = f"<b>{self.title} {installments}</b>\n"
+        text += f"Date: {self.date.strftime(DATETIME_FORMAT)}\n"
+        text += "\n"
+        text += "\n"
+        text += f"<b>{self.currency}: {self.amount}</b>"
+
+        return text
+
 
 class SistarbancMovement(BaseModel):
     card: str
@@ -92,7 +115,6 @@ class SistarbancMovement(BaseModel):
     currency: Literal["USD"] | Literal["UYU"]
 
     mov: datetime
-
 
     @classmethod
     def parse_raw(cls, raw):
@@ -111,14 +133,26 @@ class SistarbancMovement(BaseModel):
         )
 
     def matches(self, other):
-        return all([
-            # self.id == other.id,
-            self.card == other.card,
-            self.ing == other.ing,
-            self.title== other.title,
-            self.amount== other.amount,
-            self.currency== other.currency,
-        ])
+        return all(
+            [
+                # self.id == other.id,
+                self.card == other.card,
+                self.ing == other.ing,
+                self.title == other.title,
+                self.amount == other.amount,
+                self.currency == other.currency,
+            ]
+        )
+
+    def format(self):
+        text = f"<b>{self.title}</b>\n"
+        text += f"Mov: {self.mov.strftime(DATE_FORMAT)}\n"
+        text += f"Ing: {self.ing.strftime(DATE_FORMAT)}\n"
+        text += "\n"
+        text += "\n"
+        text += f"<b>{self.currency}: {self.amount}</b>"
+
+        return text
 
 
 class SistarbancProvider(BaseProvider):
@@ -128,17 +162,17 @@ class SistarbancProvider(BaseProvider):
 
     def __repr__(self):
         return f"<SistarbancProvider {self.credentials_env=}>"
-    
+
     def start(self):
         username, password = environ[self.credentials_env].split(":")
         self._login(username, password)
-    
+
     def stop(self):
         self.session.close()
-    
+
     def _login(self, username, password):
         assert username and password, "Missing credentials."
-        
+
         self.session.get("https://www.e-sistarbanc.com.uy/ingresar/")
         self.session.post(
             "https://www.e-sistarbanc.com.uy/ingresar/",
@@ -153,8 +187,6 @@ class SistarbancProvider(BaseProvider):
             },
         )
 
-    
-    
     def fetch_sistarbanc_movements(self, account: "SistarbancMovementsAccount"):
         html = self.session.get(
             "https://www.e-sistarbanc.com.uy/ac_movimientos_actuales.php"
@@ -177,7 +209,9 @@ class SistarbancProvider(BaseProvider):
             if e["Concepto"] not in skiped_entries
         ]
 
-    def fetch_sistarbanc_authorizations(self, account: "SistarbancAuthorizationsAccount"):
+    def fetch_sistarbanc_authorizations(
+        self, account: "SistarbancAuthorizationsAccount"
+    ):
         html = self.session.get(
             "https://www.e-sistarbanc.com.uy/ac_autorizaciones_pendientes.php"
         ).text

@@ -1,7 +1,6 @@
 import yaml
 from typing import Annotated, Literal, Optional, Union
 from pydantic import BaseModel, Field, validator
-from itertools import groupby
 
 from .providers.itau import ItauAccountTransaction, ItauCardAuthorization
 from .providers.sistarbanc import SistarbancMovement, SistarbancAuthorization
@@ -50,6 +49,8 @@ Account = Annotated[Union[
 
 
 class Config(BaseModel):
+  token: str
+  target_chat: str
   accounts: list[Account] 
 
   @validator('accounts', pre=True)

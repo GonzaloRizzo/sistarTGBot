@@ -22,7 +22,7 @@ class ItauAccountTransaction(BaseModel):
     importe: float
 
     descripcionAdicional: str
-    codigoFormulario: int # What is this?
+    codigoFormulario: int  # What is this?
     saldo: float
 
     @validator("fecha", pre=True)
@@ -33,15 +33,26 @@ class ItauAccountTransaction(BaseModel):
             return field
         elif isinstance(field, str):
             return field
-    
+
     def matches(self, other):
-        return all([
-            self.tipo == other.tipo,
-            self.fecha== other.fecha,
-            self.descripcion == other.descripcion, # This one should be similar, not necesary equal for it to match
-            # self.descripcionAdicional == other.descripcionAdicional, # Unfortunately this one do change
-            self.importe == other.importe,
-        ])
+        return all(
+            [
+                self.tipo == other.tipo,
+                self.fecha == other.fecha,
+                self.descripcion
+                == other.descripcion,  # This one should be similar, not necesary equal for it to match
+                # self.descripcionAdicional == other.descripcionAdicional, # Unfortunately this one do change
+                self.importe == other.importe,
+            ]
+        )
+
+    def format(self):
+        text = f"<b>{self.tipo} {self.descripcion} {self.descripcionAdicional}</b>\n"
+        text += "\n"
+        text += f"<b>Fecha:</b> {self.fecha}\n"
+        text += "\n"
+        text += f"<b>Importe:</b> {self.importe}\n"
+        return text
 
 
 class ItauCardAuthorization(BaseModel):
@@ -73,7 +84,7 @@ class ItauCardAuthorization(BaseModel):
             return field["hash"]
         elif isinstance(field, str):
             return field
-    
+
     def matches(self, other):
         # I can probably use Annotated in order to automate the declaration of which fields should be equal
         # Which ones DO change, which ones SHOULD stay equal, and which ones MUST stay equal
@@ -81,15 +92,25 @@ class ItauCardAuthorization(BaseModel):
         # It's important when I integrate this with beancount that I also detect when some transaction matches, but has changed in some way
 
         # TODO: Sort by precedence
-        return all([
-            self.tipo == other.tipo,
-            self.fecha == other.fecha,
-            self.tarjeta == other.tarjeta,
-            self.importe == other.importe,
-            self.nombreComercio == other.nombreComercio,
-            self.moneda == other.moneda,
+        return all(
+            [
+                self.tipo == other.tipo,
+                self.fecha == other.fecha,
+                self.tarjeta == other.tarjeta,
+                self.importe == other.importe,
+                self.nombreComercio == other.nombreComercio,
+                self.moneda == other.moneda,
+            ]
+        )
 
-        ])
+    def format(self):
+        text = f"<b>{self.tipo} {self.nombreComercio}: {self.etiqueta}</b>\n"
+        text += "\n"
+        text += f"<b>Fecha:</b> {self.fecha} {self.hora}\n"
+        text += "\n"
+        text += f"<b>{self.moneda}:</b> {self.importe}\n"
+
+        return text
 
 
 class ItauProvider(BaseProvider):
@@ -99,7 +120,7 @@ class ItauProvider(BaseProvider):
         self.context = None
 
         self.credentials_env = credentials_env
-    
+
     def __repr__(self):
         return f"<ItauProvider {self.credentials_env=}>"
 
