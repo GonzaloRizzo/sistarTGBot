@@ -1,10 +1,9 @@
 import sentry_sdk
-import asyncio
 import logging
 from dotenv import load_dotenv
 from os import getenv
 
-from banco_watcher.bot import BancoWatcherBot
+from tg_bank_forwarder.bot import TGBankForwarderBot
 
 load_dotenv()
 SENTRY_DSN = getenv("SENTRY_DSN")
@@ -19,10 +18,10 @@ if SENTRY_DSN:
         traces_sample_rate=1.0,
     )
 
-async def main():
-    bot = BancoWatcherBot("config.json")
-    await bot.start()
+def main():
+    bot = TGBankForwarderBot("config.yml")
+    bot.loop()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

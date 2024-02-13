@@ -1,9 +1,5 @@
 __pycache__
 .env
-last_polls
-config.json
-
-history
 
 config.yml
 cache
