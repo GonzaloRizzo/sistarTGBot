@@ -33,13 +33,12 @@ class TGBankForwarderBot:
                 # with account.new_transactions as transactions:
                 
 
-                # transactions = provider.get_new_transactions(account)
                 print("-----")
                 print(account)
-                transactions = provider.get_transactions_for_account(account)
-
-                print(transactions)
-                # new_transactions, old_transactions = provider.compare_transactions(account)
+                # transactions = provider.get_transactions_for_account(account)
+                # transactions = provider.get_new_transactions(account)
+                diff = provider.compare_transactions(account)
+                print(diff)
 
                 # send_transactions(new_transactions)
             provider.stop()

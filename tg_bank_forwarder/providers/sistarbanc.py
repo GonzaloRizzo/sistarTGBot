@@ -43,18 +43,20 @@ def parse_amount_currency(uyu, usd):
 
 
 class SistarbancAuthorization(BaseModel):
-    id: int
+    id: int # What's this?
+
     card: str
-    title: str
-
     date: datetime
-    instalments: tuple[int, int]
-
+    title: str
     amount: float
     currency: Literal["USD"] | Literal["UYU"]
 
+    instalments: tuple[int, int]
+
+
     @classmethod
     def parse_raw(cls, raw):
+        # TODO: Remove this, I can certainly use Alias and root_validator for those transformations
         date = datetime.strptime(f'{raw["Fecha"]} {raw["Hora"]}', "%d/%m/%y %H:%M:%S")
 
         amount, currency = parse_amount_currency(raw["$"], raw["USD"])
@@ -71,16 +73,26 @@ class SistarbancAuthorization(BaseModel):
             amount=amount,
             currency=currency,
         )
+    
+    def matches(self, other):
+        return all([
+            # self.id == other.id,
+            self.card == other.card,
+            self.date == other.date,
+            self.title== other.title,
+            self.amount== other.amount,
+            self.currency== other.currency,
+        ])
 
 class SistarbancMovement(BaseModel):
     card: str
-    title: str
-
-    mov: datetime
     ing: datetime
-
+    title: str
     amount: float
     currency: Literal["USD"] | Literal["UYU"]
+
+    mov: datetime
+
 
     @classmethod
     def parse_raw(cls, raw):
@@ -97,6 +109,16 @@ class SistarbancMovement(BaseModel):
             currency=currency,
             amount=amount,
         )
+
+    def matches(self, other):
+        return all([
+            # self.id == other.id,
+            self.card == other.card,
+            self.ing == other.ing,
+            self.title== other.title,
+            self.amount== other.amount,
+            self.currency== other.currency,
+        ])
 
 
 class SistarbancProvider(BaseProvider):

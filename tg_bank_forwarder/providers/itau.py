@@ -17,11 +17,12 @@ BASE_URL = "https://www.itaulink.com.uy/trx/"
 
 class ItauAccountTransaction(BaseModel):
     tipo: Literal["D", "C"] | str
-    descripcion: str
-    descripcionAdicional: str
-    codigoFormulario: int
     fecha: date
+    descripcion: str
     importe: float
+
+    descripcionAdicional: str
+    codigoFormulario: int # What is this?
     saldo: float
 
     @validator("fecha", pre=True)
@@ -32,16 +33,26 @@ class ItauAccountTransaction(BaseModel):
             return field
         elif isinstance(field, str):
             return field
+    
+    def matches(self, other):
+        return all([
+            self.tipo == other.tipo,
+            self.fecha== other.fecha,
+            self.descripcion == other.descripcion, # This one should be similar, not necesary equal for it to match
+            # self.descripcionAdicional == other.descripcionAdicional, # Unfortunately this one do change
+            self.importe == other.importe,
+        ])
 
 
 class ItauCardAuthorization(BaseModel):
+    tipo: Literal["COMPRA"] | str
     fecha: date
     tarjeta: str
-    hora: str
-    nombreComercio: str
-    tipo: Literal["COMPRA"] | str
-    moneda: Literal["Dolares", "Pesos"] | str
     importe: float
+    nombreComercio: str
+    moneda: Literal["Dolares", "Pesos"] | str
+
+    hora: str
     nroReserva: str
     nroRespuesta: int
     etiqueta: Literal["Aprobada", "Negada"] | str
@@ -62,6 +73,23 @@ class ItauCardAuthorization(BaseModel):
             return field["hash"]
         elif isinstance(field, str):
             return field
+    
+    def matches(self, other):
+        # I can probably use Annotated in order to automate the declaration of which fields should be equal
+        # Which ones DO change, which ones SHOULD stay equal, and which ones MUST stay equal
+
+        # It's important when I integrate this with beancount that I also detect when some transaction matches, but has changed in some way
+
+        # TODO: Sort by precedence
+        return all([
+            self.tipo == other.tipo,
+            self.fecha == other.fecha,
+            self.tarjeta == other.tarjeta,
+            self.importe == other.importe,
+            self.nombreComercio == other.nombreComercio,
+            self.moneda == other.moneda,
+
+        ])
 
 
 class ItauProvider(BaseProvider):
