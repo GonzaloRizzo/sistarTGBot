@@ -1,5 +1,6 @@
 from itertools import groupby
 from time import sleep
+from typing import TYPE_CHECKING
 
 import sentry_sdk
 import telebot
@@ -8,6 +9,8 @@ from rich import print
 from .providers import provider_registry
 from .config import Config
 
+if TYPE_CHECKING:
+    from .config import Account
 
 TIME_30M = 60 * 30
 
@@ -26,30 +29,33 @@ class TGBankForwarderBot:
 
     def check_accounts(self):
         for (provider_name, credentials_env), accounts in self.grouped_accounts():
-            try:
-                provider = provider_registry[provider_name](credentials_env)
-                print("provider", provider)
+            provider = provider_registry[provider_name](credentials_env)
+            print("provider", provider)
 
-                # TODO: Turn this into a context manager
-                provider.start()
+            # TODO: Turn this into a context manager
+            provider.start()
 
-                for account in accounts:
-
+            for account in accounts:
+                try:
                     print("account", account)
 
                     new_transactions = provider.get_new_transactions(account)
                     print("new_transactions", new_transactions)
 
                     self.send_transactions(account, new_transactions)
-                provider.stop()
 
-            except Exception as err:
-                sentry_sdk.capture_exception(err)
-                self.telegram.send_message(self.config.target_chat, str(err))
-                raise err
+                except Exception as err:
+                    sentry_sdk.capture_exception(err)
+                    self.send_error(account, err)
+
+            provider.stop()
 
     def bot_test(self):
         self.telegram.send_message(self.config.target_chat, "jkaja")
+    
+    def send_error(self, account: "Account", err: Exception):
+        text = f"{account.name} failied:\n{str(err)}"
+        self.telegram.send_message(self.config.target_chat, text)
 
     def send_transactions(self, account, new_transactions):
         for transaction in new_transactions:
