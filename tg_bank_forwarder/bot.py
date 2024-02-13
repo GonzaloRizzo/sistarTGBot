@@ -29,26 +29,21 @@ class TGBankForwarderBot:
 
     def check_accounts(self):
         for (provider_name, credentials_env), accounts in self.grouped_accounts():
-            provider = provider_registry[provider_name](credentials_env)
-            print(f"{provider=}")
+            print(f"{provider_name=}")
 
-            # TODO: Turn this into a context manager
-            provider.start()
+            with provider_registry[provider_name](credentials_env) as provider:
+                for account in accounts:
+                    try:
+                        print(f"{account=}")
 
-            for account in accounts:
-                try:
-                    print(f"{account=}")
+                        new_transactions = provider.get_new_transactions(account)
+                        print(f"{new_transactions=}")
 
-                    new_transactions = provider.get_new_transactions(account)
-                    print(f"{new_transactions=}")
+                        self.send_transactions(account, new_transactions)
 
-                    self.send_transactions(account, new_transactions)
-
-                except Exception as err:
-                    sentry_sdk.capture_exception(err)
-                    self.send_error(account, err)
-
-            provider.stop()
+                    except Exception as err:
+                        sentry_sdk.capture_exception(err)
+                        self.send_error(account, err)
 
     def send_error(self, account: "Account", err: Exception):
         text = f"{account.name} failied:\n{str(err)}"

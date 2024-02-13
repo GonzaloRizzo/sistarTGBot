@@ -9,10 +9,10 @@ if TYPE_CHECKING:
 
 
 class BaseProvider():
-    def start(self):
-        pass
+    def __enter__(self):
+        return self
 
-    def stop(self):
+    def __exit__(self, type, value, traceback):
         pass
 
     def get_transactions_for_account(self, account: "Account") -> list[BaseModel]:

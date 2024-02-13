@@ -163,11 +163,13 @@ class SistarbancProvider(BaseProvider):
     def __repr__(self):
         return f"<SistarbancProvider {self.credentials_env=}>"
 
-    def start(self):
+    def __enter__(self):
         username, password = environ[self.credentials_env].split(":")
         self._login(username, password)
 
-    def stop(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
         self.session.close()
 
     def _login(self, username, password):

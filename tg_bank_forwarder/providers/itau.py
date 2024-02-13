@@ -124,7 +124,7 @@ class ItauProvider(BaseProvider):
     def __repr__(self):
         return f"<ItauProvider {self.credentials_env=}>"
 
-    def start(self):
+    def __enter__(self):
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.chromium.launch()
         self.context = self.browser.new_context()
@@ -132,7 +132,9 @@ class ItauProvider(BaseProvider):
         username, password = environ[self.credentials_env].split(":")
         self._login(username, password)
 
-    def stop(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
         assert self.playwright, "ItauProvider not started"
 
         self.playwright.stop()
