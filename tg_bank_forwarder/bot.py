@@ -30,17 +30,17 @@ class TGBankForwarderBot:
     def check_accounts(self):
         for (provider_name, credentials_env), accounts in self.grouped_accounts():
             provider = provider_registry[provider_name](credentials_env)
-            print("provider", provider)
+            print(f"{provider=}")
 
             # TODO: Turn this into a context manager
             provider.start()
 
             for account in accounts:
                 try:
-                    print("account", account)
+                    print(f"{account=}")
 
                     new_transactions = provider.get_new_transactions(account)
-                    print("new_transactions", new_transactions)
+                    print(f"{new_transactions=}")
 
                     self.send_transactions(account, new_transactions)
 
@@ -50,9 +50,6 @@ class TGBankForwarderBot:
 
             provider.stop()
 
-    def bot_test(self):
-        self.telegram.send_message(self.config.target_chat, "jkaja")
-    
     def send_error(self, account: "Account", err: Exception):
         text = f"{account.name} failied:\n{str(err)}"
         self.telegram.send_message(self.config.target_chat, text)
