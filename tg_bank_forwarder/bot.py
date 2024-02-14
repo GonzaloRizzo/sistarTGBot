@@ -6,6 +6,8 @@ import sentry_sdk
 import telebot
 from rich import print
 
+from tg_bank_forwarder.transaction_cache import commit_cache_changes
+
 from .config import Config
 from .providers import provider_registry
 
@@ -24,6 +26,7 @@ class TGBankForwarderBot:
         """Groups accounts so if the provider and the credentials are the same, we reuse the session"""
         return groupby(self.config.accounts, lambda a: (a.provider, a.credentials_env))
 
+    @commit_cache_changes()
     def check_accounts(self):
         for (provider_name, credentials_env), accounts in self.grouped_accounts():
             print(f"{provider_name=}")
