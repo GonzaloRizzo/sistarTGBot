@@ -1,7 +1,8 @@
-import sentry_sdk
 import logging
-from dotenv import load_dotenv
 from os import getenv
+
+import sentry_sdk
+from dotenv import load_dotenv
 
 from tg_bank_forwarder.bot import TGBankForwarderBot
 
@@ -17,6 +18,7 @@ if SENTRY_DSN:
         dsn=SENTRY_DSN,
         traces_sample_rate=1.0,
     )
+
 
 def main():
     bot = TGBankForwarderBot("config.yml")

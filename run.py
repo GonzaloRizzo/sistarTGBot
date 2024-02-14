@@ -1,6 +1,6 @@
-from tg_bank_forwarder.bot import TGBankForwarderBot
 from dotenv import load_dotenv
-from rich import inspect
+
+from tg_bank_forwarder.bot import TGBankForwarderBot
 
 load_dotenv()
 bot = TGBankForwarderBot("config.yml")

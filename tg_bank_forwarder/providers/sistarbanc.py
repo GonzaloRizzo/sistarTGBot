@@ -1,6 +1,6 @@
 from datetime import datetime
 from os import environ
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -195,7 +195,7 @@ class SistarbancProvider(BaseProvider):
         ).text
 
         bs = BeautifulSoup(html, "lxml")
-        
+
         content = bs.select_one(".maq_contenido.cuenta")
         assert content, "Missing content"
 

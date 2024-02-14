@@ -1,0 +1,7 @@
+
+[lint]
+extend-select = [
+    "I",
+    "UP",  # pyupgrade
+    # "D",   # pydocstyle
+]

@@ -1,16 +1,16 @@
 import json
-from os import environ
 from datetime import date
-from urllib.parse import urljoin
+from os import environ
 from typing import TYPE_CHECKING, Literal
+from urllib.parse import urljoin
 
-from pydantic import BaseModel, validator
 from playwright.sync_api import sync_playwright
+from pydantic import BaseModel, validator
 
 from .base import BaseProvider
 
 if TYPE_CHECKING:
-    from ..config import ItauCardAuthorizationsAccount, ItauBankAccount
+    from ..config import ItauBankAccount, ItauCardAuthorizationsAccount
 
 BASE_URL = "https://www.itaulink.com.uy/trx/"
 

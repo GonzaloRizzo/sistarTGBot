@@ -6,8 +6,8 @@ import sentry_sdk
 import telebot
 from rich import print
 
-from .providers import provider_registry
 from .config import Config
+from .providers import provider_registry
 
 if TYPE_CHECKING:
     from .config import Account
@@ -21,10 +21,7 @@ class TGBankForwarderBot:
         self.telegram = telebot.TeleBot(self.config.token, parse_mode="html")
 
     def grouped_accounts(self):
-        """
-        Groups accounts so if the provider and the credentials are the same, we reuse the session
-        """
-
+        """Groups accounts so if the provider and the credentials are the same, we reuse the session"""
         return groupby(self.config.accounts, lambda a: (a.provider, a.credentials_env))
 
     def check_accounts(self):
