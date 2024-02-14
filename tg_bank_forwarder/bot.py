@@ -9,7 +9,7 @@ from rich import print
 from tg_bank_forwarder.transaction_cache import commit_cache_changes
 
 from .config import Config
-from .providers import provider_registry
+from .providers.registry import provider_registry
 
 if TYPE_CHECKING:
     from .config import Account
