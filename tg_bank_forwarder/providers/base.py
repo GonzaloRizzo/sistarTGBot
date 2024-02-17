@@ -20,6 +20,7 @@ class BaseProvider:
         return getattr(self, f"fetch_{account.type}")(account)
 
     def compare_transactions(self, account: "Account"):
+        # TODO: Move this outside of here, providers should just provide, not compare
         current_transactions = self.get_transactions_for_account(account)
         cached_transactions = load_transactions(account)
 
@@ -56,7 +57,12 @@ class BaseProvider:
             "=": matches,
             "+": additions,
         }
-        print(diff)
+
+        from ..transaction_cache import store_diff
+
+        # TODO: Move this out of here:
+        store_diff(diff)
+
         return diff
 
     def get_new_transactions(self, account: "Account"):

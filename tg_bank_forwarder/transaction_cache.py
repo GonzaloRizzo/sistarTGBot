@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from contextlib import contextmanager
+from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -26,15 +27,31 @@ def load_transactions(account: Account):
         return []
 
 
+def with_cache_dir(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+        func(*args, **kwargs)
+
+    return wrapper
+
+
+@with_cache_dir
 def store_transactions(account: Account, transactions: list[BaseModel]):
     for t in transactions:
         assert isinstance(
             t, account.transaction_model
         ), f"Tried to store invalid transaction type for {account.name}. {t.__class__} != {account.transaction_model}"
 
-    Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
     with open(Path(CACHE_DIR, f"{account.name}.json"), "w") as f:
         f.write(json.dumps(transactions, indent=4, default=pydantic_encoder))
+
+
+@with_cache_dir
+def store_diff(diff):
+    Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
+    with open(Path(CACHE_DIR, "diff.json"), "w") as f:
+        f.write(json.dumps(diff, indent=4, default=pydantic_encoder))
 
 
 @contextmanager
