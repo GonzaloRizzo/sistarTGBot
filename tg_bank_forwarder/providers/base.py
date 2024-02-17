@@ -51,11 +51,13 @@ class BaseProvider:
         ]  # Take the cu_t from the mapping given that even if they match, cu_t is fresh
         additions = new_transactions  # By Definition
 
-        return {
+        diff = {
             "-": deletions,
             "=": matches,
             "+": additions,
         }
+        print(diff)
+        return diff
 
     def get_new_transactions(self, account: "Account"):
         return self.compare_transactions(account)["+"]

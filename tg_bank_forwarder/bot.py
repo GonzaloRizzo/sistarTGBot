@@ -37,7 +37,6 @@ class TGBankForwarderBot:
                         print(f"{account=}")
 
                         new_transactions = provider.get_new_transactions(account)
-                        print(f"{new_transactions=}")
 
                         self.send_transactions(account, new_transactions)
 

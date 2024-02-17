@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -47,11 +46,13 @@ def commit_cache_changes():
     try:
         yield
     finally:
-        r.stage([f for f in os.listdir(CACHE_DIR) if f.endswith(".json")])
+        files = [f for f in os.listdir(CACHE_DIR) if f.endswith(".json")]
+        if len(files) > 0:
+            r.stage(files)
 
-        r.do_commit(
-            message=f"Update {datetime.now()}".encode(),
-            author=b"tg_bank_forwarder <>",
-        )
+            r.do_commit(
+                message=b"Update",
+                author=b"tg_bank_forwarder <>",
+            )
 
-        r.close()
+            r.close()
