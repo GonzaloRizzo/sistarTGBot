@@ -61,7 +61,7 @@ class BaseProvider:
         from ..transaction_cache import store_diff
 
         # TODO: Move this out of here:
-        store_diff(diff)
+        store_diff(account, diff)
 
         return diff
 

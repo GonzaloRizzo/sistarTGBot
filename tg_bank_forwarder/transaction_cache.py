@@ -48,9 +48,9 @@ def store_transactions(account: Account, transactions: list[BaseModel]):
 
 
 @with_cache_dir
-def store_diff(diff):
+def store_diff(account, diff):
     Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
-    with open(Path(CACHE_DIR, "diff.json"), "w") as f:
+    with open(Path(CACHE_DIR, f"{account.name}-diff.json"), "w") as f:
         f.write(json.dumps(diff, indent=4, default=pydantic_encoder))
 
 
