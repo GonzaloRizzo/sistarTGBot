@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from dulwich.errors import NotGitRepository
+from dulwich.porcelain import get_tree_changes
 from dulwich.repo import Repo
 from pydantic import BaseModel, parse_file_as
 from pydantic.json import pydantic_encoder
@@ -54,6 +55,11 @@ def store_diff(account, diff):
         f.write(json.dumps(diff, indent=4, default=pydantic_encoder))
 
 
+def repo_has_staged_changes(repo: Repo):
+    changes = get_tree_changes(repo)
+    return any(len(changes[key]) > 0 for key in ["add", "delete", "modify"])
+
+
 @contextmanager
 def commit_cache_changes():
     try:
@@ -63,10 +69,9 @@ def commit_cache_changes():
     try:
         yield
     finally:
-        files = [f for f in os.listdir(CACHE_DIR) if f.endswith(".json")]
-        if len(files) > 0:
-            r.stage(files)
+        r.stage([f for f in os.listdir(CACHE_DIR) if f.endswith(".json")])
 
+        if repo_has_staged_changes(r):
             r.do_commit(
                 message=b"Update",
                 author=b"tg_bank_forwarder <>",
