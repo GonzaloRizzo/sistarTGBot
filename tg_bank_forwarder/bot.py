@@ -1,3 +1,4 @@
+import sys
 from itertools import groupby
 from time import sleep
 from typing import TYPE_CHECKING
@@ -59,4 +60,7 @@ class TGBankForwarderBot:
     def loop(self):
         while True:
             self.check_accounts()
+
+            # Make sure every print actually printed
+            sys.stdout.flush()
             sleep(TIME_30M)
