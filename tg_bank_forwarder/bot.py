@@ -32,21 +32,21 @@ class TGBankForwarderBot:
         for (provider_name, credentials_env), accounts in self.grouped_accounts():
             print(f"{provider_name=}")
 
-            with provider_registry[provider_name](credentials_env) as provider:
-                for account in accounts:
-                    try:
+            try:
+                with provider_registry[provider_name](credentials_env) as provider:
+                    for account in accounts:
                         print(f"{account=}")
 
                         new_transactions = provider.get_new_transactions(account)
 
                         self.send_transactions(account, new_transactions)
 
-                    except Exception as err:
-                        sentry_sdk.capture_exception(err)
-                        self.send_error(account, err)
+            except Exception as err:
+                sentry_sdk.capture_exception(err)
+                self.send_error(err)
 
-    def send_error(self, account: "Account", err: Exception):
-        text = f"{account.name} failied:\n{str(err)}"
+    def send_error(self, err: Exception):
+        text = f"Error:\n{str(err)}"
         self.telegram.send_message(self.config.target_chat, text)
 
     def send_transactions(self, account, new_transactions):
