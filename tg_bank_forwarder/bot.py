@@ -40,7 +40,7 @@ class TGBankForwarderBot:
 
     def send_error(self, err: Exception):
         text = f"Error:\n{str(err)}"
-        self.telegram.send_message(self.config.target_chat, text)
+        self.telegram.send_message(self.config.target_chat, text, parse_mode="")
 
     def send_transactions(self, account, new_transactions):
         for transaction in new_transactions:

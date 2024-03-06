@@ -13,5 +13,5 @@ RUN poetry config virtualenvs.create false \
 
 COPY . /src
 
-RUN echo '*/5 * * * * cd /src && python main.py >/proc/1/fd/1 2>/proc/1/fd/2' | crontab
-CMD ["cron", "-f"]
+RUN echo '*/30 * * * * cd /src && python main.py >/proc/1/fd/1 2>/proc/1/fd/2' | crontab
+CMD printenv > /etc/environment && cron -f
