@@ -3,6 +3,7 @@ services:
   bot:
     build: .
     env_file: .env
+    privileged: true
     volumes:
       - ./cache:/src/cache
       - .:/src

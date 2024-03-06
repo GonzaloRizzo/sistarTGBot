@@ -1,7 +1,4 @@
-import sys
 from itertools import groupby
-from time import sleep
-from typing import TYPE_CHECKING
 
 import sentry_sdk
 import telebot
@@ -11,11 +8,6 @@ from tg_bank_forwarder.transaction_cache import commit_cache_changes
 
 from .config import Config
 from .providers.registry import provider_registry
-
-if TYPE_CHECKING:
-    from .config import Account
-
-TIME_30M = 60 * 30
 
 
 class TGBankForwarderBot:
@@ -42,6 +34,7 @@ class TGBankForwarderBot:
                         self.send_transactions(account, new_transactions)
 
             except Exception as err:
+                print(err)
                 sentry_sdk.capture_exception(err)
                 self.send_error(err)
 
@@ -57,10 +50,3 @@ class TGBankForwarderBot:
 
             self.telegram.send_message(self.config.target_chat, text)
 
-    def loop(self):
-        while True:
-            self.check_accounts()
-
-            # Make sure every print actually printed
-            sys.stdout.flush()
-            sleep(TIME_30M)

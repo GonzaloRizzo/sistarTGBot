@@ -22,7 +22,7 @@ if SENTRY_DSN:
 
 def main():
     bot = TGBankForwarderBot("config.yml")
-    bot.loop()
+    bot.check_accounts()
 
 
 if __name__ == "__main__":
