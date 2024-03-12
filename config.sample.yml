@@ -1,0 +1,21 @@
+token: ""
+target_chat: ""
+accounts:
+  Itau USD:
+    type: itau_bank_account
+    credentials_env: ITAU_CREDENTIALS
+    id: ""
+
+  Itau UYU:
+    type: itau_bank_account
+    credentials_env: ITAU_CREDENTIALS
+    id: ""
+
+  Itau VISA:
+    type: itau_card_authorizations
+    credentials_env: ITAU_CREDENTIALS
+    id: ""
+
+  Mastercard Authorizations:
+    type: sistarbanc_authorizations
+    credentials_env: SISTARBANC_CREDENTIALS
